@@ -44,7 +44,7 @@ evpfl.loc[:,'<DATE_TIME>'] = pd.to_datetime(evpfl.loc[:,'<DATE_TIME>'])
 
 evpfl = evpfl.set_index('<DATE_TIME>')
 
-print(evpfl.head())
+#print(evpfl.head())
 
 print("FIXED DATA")
 #-----------------------------------------------------------------------------------------#
@@ -81,15 +81,15 @@ class Engine():
         return self._get_stats()
             
     def _fill_orders(self):
+        orders_filled = []
         for order in self.strategy.orders:
-#            print(order.idx + pd.Timedelta(minutes=1), self.current_idx)
             can_fill = False
+            if order.idx + pd.Timedelta(minutes=1) != self.current_idx:
+                continue
             if order.side == 'buy' and self.cash >= self.data.loc[self.current_idx]['open'] * order.size:
                     can_fill = True 
             elif order.side == 'sell' and self.strategy.position_size >= order.size:
                     can_fill = True
-            if order.idx + pd.Timedelta(minutes=1) != self.current_idx:
-                continue
             if can_fill:
                 if order.side == 'sell':
                     t = Trade(
@@ -106,17 +106,21 @@ class Engine():
                         type = order.type,
                         idx = order.idx)
                     
-                print("ORDER FILLED", order.idx, order.side, self.data.loc[order.idx]['open'] ,self.ask_data.loc[order.idx]['open'])
+                print("ORDER FILLED", self.current_idx, order.side, self.data.loc[self.current_idx]['open'] ,self.ask_data.loc[self.current_idx]['open'])
                 self.strategy.trades.append(t)
                 self.cash -= t.price * t.size
-                self.strategy.orders.remove(order)
+                orders_filled.append(order)
+#                self.strategy.orders.remove(order)
+        for order in orders_filled:
+            self.strategy.orders.remove(order)
+        orders_filled = []
 #        self.strategy.orders = []
 
     def _get_stats(self):
         metrics = {}
         total_return =100 * ((self.data.loc[self.current_idx]['close'] * self.strategy.position_size + self.cash) / self.initial_cash -1)
         metrics['total_return'] = total_return
-        print(metrics['total_return'], self.cash)
+        print(metrics['total_return'], self.cash, self.strategy.position_size)
         return metrics
 
 class Strategy():
@@ -176,11 +180,11 @@ class BuyAndSellSwitch(Strategy):
             if evpfl.loc[:,'impact_type'][self.event_num_idx] == 1:
                 if evpfl.loc[:,'forecast_value'][self.event_num_idx] < evpfl.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(self.current_idx + pd.Timedelta(minutes=5),1000)
+                    self.sell(self.current_idx + pd.Timedelta(minutes=10),1000)
             if evpfl.loc[:,'impact_type'][self.event_num_idx] == 2:
                 if evpfl.loc[:,'forecast_value'][self.event_num_idx] > evpfl.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(self.current_idx + pd.Timedelta(minutes=5),1000)
+                    self.sell(self.current_idx + pd.Timedelta(minutes=10),1000)
             if self.event_num_idx < len(evpfl)-1:
                 self.event_num_idx += 1
         else:
