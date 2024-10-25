@@ -1,54 +1,66 @@
 import numpy as np
 import pandas as pd
-import matplotlib as plt
-import datetime
+import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
 
-#           Gathering Data
-#----------------------------------------------------------------------------------------------------------------------------#
-file_path = 'C:\\Users\\Tadek\\Documents\\TickData\\EURUSD_202406030000_202406282358.csv'
+# IMPORTING DATA
 
-event_file_path = 'C:\\Users\\Tadek\\AppData\\Roaming\\MetaQuotes\\Terminal\\D0E8209F77C8CF37AD8BF550E51FF075\\MQL5\\Files\\test.csv'
+bid1m = pd.read_csv('data\\bid1m.csv', sep = ',', header = 0, index_col=0)
+ask1m = pd.read_csv('data\\ask1m.csv', sep = ',', header = 0, index_col=0)
+evnts = pd.read_csv('data\\events.csv', sep = ',', header = 0, index_col=0)
 
-file_reader = pd.read_csv(file_path, header=0, sep='\t')
+# bid1m.loc[:,'close'].plot()
 
-evpfl = pd.read_csv(event_file_path, sep = ";", header=0)
-
-file_reader.loc[:,"<BID>"] = file_reader.loc[:,"<BID>"].replace("",np.NaN).fillna(file_reader.loc[:,"<ASK>"])
-
-file_reader.loc[:,"<ASK>"] = file_reader.loc[:,"<ASK>"].replace("",np.NaN).fillna(file_reader.loc[:,"<BID>"])
-
-file_reader.loc[:,'<DATE_TIME>'] = pd.to_datetime(file_reader.pop('<DATE>')) + pd.to_timedelta(file_reader.pop('<TIME>'))
-
-#file_reader.insert(0, '<DATE_TIME>', file_reader.pop('<DATE_TIME>'))
-
-# RESAMPLING DATA FROM TICK TO OHLC 1 MIN BARS
-resample_bid = file_reader.resample('1Min', on='<DATE_TIME>')['<BID>'].ohlc()
-
-resample_ask = file_reader.resample('1Min', on='<DATE_TIME>')['<ASK>'].ohlc()
-
-for i in range(len(resample_bid)):
-    if np.isnan(resample_bid.iloc[i, 0]):
-        resample_bid.iloc[i, 0] = resample_bid.iloc[i-1, 3]
-        resample_bid.iloc[i, 1] = resample_bid.iloc[i-1, 3]
-        resample_bid.iloc[i, 2] = resample_bid.iloc[i-1, 3]
-        resample_bid.iloc[i, 3] = resample_bid.iloc[i-1, 3]
-
-for i in range(len(resample_ask)):
-    if np.isnan(resample_ask.iloc[i, 0]):
-        resample_ask.iloc[i, 0] = resample_ask.iloc[i-1, 3]
-        resample_ask.iloc[i, 1] = resample_ask.iloc[i-1, 3]
-        resample_ask.iloc[i, 2] = resample_ask.iloc[i-1, 3]
-        resample_ask.iloc[i, 3] = resample_ask.iloc[i-1, 3]
-
-evpfl.loc[:,'<DATE_TIME>'] = pd.to_datetime(evpfl.loc[:,'<DATE_TIME>'])
-
-evpfl = evpfl.set_index('<DATE_TIME>')
-
-#print(evpfl.head())
-
-print("FIXED DATA")
 #-----------------------------------------------------------------------------------------#
+#   DATA ANALYSIS 
+n = 0
+j=0
+prev_index = bid1m.index[0]
+data_close = []
+data_open = []
+columns = []
 
+for i in range(20):
+    data_close.append([])
+    data_open.append([])
+    columns.append(f'{i}')
+
+def is_evnt_result_positive(number):
+    if evnts.loc[:,'impact_type'][number] == 1:
+        if evnts.loc[:,'forecast_value'][number] < evnts.loc[:,'actual_value'][number]:
+            return True
+    if evnts.loc[:,'impact_type'][number] == 2:
+        if evnts.loc[:,'forecast_value'][number] > evnts.loc[:,'actual_value'][number]:
+            return True
+    return False
+
+for idx in bid1m.index:
+    prev_index = idx
+    if evnts.index[n] <= idx and evnts.index[n] >= prev_index and (evnts.index[n+1] != evnts.index[n] or evnts.index[n-1] != evnts.index[n]) and is_evnt_result_positive(n) == True:
+    # excluding datetimes with multiple events
+        for i in range(20):
+            data_close[i].append(bid1m.loc[:,'close'][j+i])
+            data_open[i].append(bid1m.loc[:,'open'][j+i])
+    else:
+        while evnts.index[n] < prev_index and n < len(evnts)-2:
+            n+= 1
+    j+=1
+
+
+df_close = pd.DataFrame(data_close)
+df_close = df_close.transpose()
+avg_close = df_close.mean()
+
+df_open = pd.DataFrame(data_open)
+df_open = df_open.transpose()
+avg_open = df_open.mean()
+
+
+
+avg_close.plot()
+#avg_open.plot()
+plt.show()
+#-----------------------------------------------------------------------------------------#
 # ENGINE USES OHLC DATA
 class Engine():
     def __init__(self, initial_cash=100000):
@@ -84,7 +96,7 @@ class Engine():
         orders_filled = []
         for order in self.strategy.orders:
             can_fill = False
-            if order.idx + pd.Timedelta(minutes=1) != self.current_idx:
+            if pd.Timestamp(order.idx) + pd.Timedelta(minutes=1) != self.current_idx:
                 continue
             if order.side == 'buy' and self.cash >= self.data.loc[self.current_idx]['open'] * order.size:
                     can_fill = True 
@@ -176,23 +188,24 @@ class BuyAndSellSwitch(Strategy):
     def on_bar(self):
         if self.prev_idx == None:
             self.prev_idx = self.current_idx
-        if evpfl.index[self.event_num_idx] >= self.prev_idx and evpfl.index[self.event_num_idx] < self.current_idx:
-            if evpfl.loc[:,'impact_type'][self.event_num_idx] == 1:
-                if evpfl.loc[:,'forecast_value'][self.event_num_idx] < evpfl.loc[:,'actual_value'][self.event_num_idx]:
+        if evnts.index[self.event_num_idx] >= self.prev_idx and evnts.index[self.event_num_idx] < self.current_idx:
+            if evnts.loc[:,'impact_type'][self.event_num_idx] == 1:
+                if evnts.loc[:,'forecast_value'][self.event_num_idx] < evnts.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(self.current_idx + pd.Timedelta(minutes=10),1000)
-            if evpfl.loc[:,'impact_type'][self.event_num_idx] == 2:
-                if evpfl.loc[:,'forecast_value'][self.event_num_idx] > evpfl.loc[:,'actual_value'][self.event_num_idx]:
+                    self.sell(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=10),1000)
+            if evnts.loc[:,'impact_type'][self.event_num_idx] == 2:
+                if evnts.loc[:,'forecast_value'][self.event_num_idx] > evnts.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(self.current_idx + pd.Timedelta(minutes=10),1000)
-            if self.event_num_idx < len(evpfl)-1:
+                    self.sell(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=10),1000)
+            if self.event_num_idx < len(evnts)-1:
                 self.event_num_idx += 1
         else:
-            while evpfl.index[self.event_num_idx] < self.prev_idx and self.event_num_idx < len(evpfl)-1:
+            while evnts.index[self.event_num_idx] < self.prev_idx and self.event_num_idx < len(evnts)-1:
                 self.event_num_idx += 1
 
-e = Engine()
-e.add_data(resample_bid)
-e.add_ask_data(resample_ask)
-e.add_strategy(BuyAndSellSwitch())
-e.run()
+
+# e = Engine()
+# e.add_data(bid1m)
+# e.add_ask_data(ask1m)
+# e.add_strategy(BuyAndSellSwitch())
+# e.run()
