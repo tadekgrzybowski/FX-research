@@ -12,56 +12,10 @@ evnts = pd.read_csv('data\\events.csv', sep = ',', header = 0, index_col=0)
 # bid1m.loc[:,'close'].plot()
 
 #-----------------------------------------------------------------------------------------#
-#   DATA ANALYSIS 
-n = 0
-j=0
-prev_index = bid1m.index[0]
-data_close = []
-data_open = []
-columns = []
-
-for i in range(20):
-    data_close.append([])
-    data_open.append([])
-    columns.append(f'{i}')
-
-def is_evnt_result_positive(number):
-    if evnts.loc[:,'impact_type'][number] == 1:
-        if evnts.loc[:,'forecast_value'][number] < evnts.loc[:,'actual_value'][number]:
-            return True
-    if evnts.loc[:,'impact_type'][number] == 2:
-        if evnts.loc[:,'forecast_value'][number] > evnts.loc[:,'actual_value'][number]:
-            return True
-    return False
-
-for idx in bid1m.index:
-    prev_index = idx
-    if evnts.index[n] <= idx and evnts.index[n] >= prev_index and (evnts.index[n+1] != evnts.index[n] or evnts.index[n-1] != evnts.index[n]) and is_evnt_result_positive(n) == True:
-    # excluding datetimes with multiple events
-        for i in range(20):
-            data_close[i].append(bid1m.loc[:,'close'][j+i])
-            data_open[i].append(bid1m.loc[:,'open'][j+i])
-    else:
-        while evnts.index[n] < prev_index and n < len(evnts)-2:
-            n+= 1
-    j+=1
-
-
-df_close = pd.DataFrame(data_close)
-df_close = df_close.transpose()
-avg_close = df_close.mean()
-
-df_open = pd.DataFrame(data_open)
-df_open = df_open.transpose()
-avg_open = df_open.mean()
-
-
-
-avg_close.plot()
-#avg_open.plot()
-plt.show()
-#-----------------------------------------------------------------------------------------#
 # ENGINE USES OHLC DATA
+
+trade_balance = []
+
 class Engine():
     def __init__(self, initial_cash=100000):
         self.strategy = None
@@ -96,7 +50,7 @@ class Engine():
         orders_filled = []
         for order in self.strategy.orders:
             can_fill = False
-            if pd.Timestamp(order.idx) + pd.Timedelta(minutes=1) != self.current_idx:
+            if str(pd.Timestamp(order.idx) + pd.Timedelta(minutes=1)) != self.current_idx:
                 continue
             if order.side == 'buy' and self.cash >= self.data.loc[self.current_idx]['open'] * order.size:
                     can_fill = True 
@@ -118,9 +72,10 @@ class Engine():
                         type = order.type,
                         idx = order.idx)
                     
-                print("ORDER FILLED", self.current_idx, order.side, self.data.loc[self.current_idx]['open'] ,self.ask_data.loc[self.current_idx]['open'])
+#                print("ORDER FILLED", self.current_idx, order.side, self.data.loc[self.current_idx]['open'] ,self.ask_data.loc[self.current_idx]['open'])
                 self.strategy.trades.append(t)
                 self.cash -= t.price * t.size
+                trade_balance.append([order.idx, self._get_stats()['total_return']])
                 orders_filled.append(order)
 #                self.strategy.orders.remove(order)
         for order in orders_filled:
@@ -132,7 +87,7 @@ class Engine():
         metrics = {}
         total_return =100 * ((self.data.loc[self.current_idx]['close'] * self.strategy.position_size + self.cash) / self.initial_cash -1)
         metrics['total_return'] = total_return
-        print(metrics['total_return'], self.cash, self.strategy.position_size)
+#        print(metrics['total_return'], self.cash, self.strategy.position_size)
         return metrics
 
 class Strategy():
@@ -192,11 +147,11 @@ class BuyAndSellSwitch(Strategy):
             if evnts.loc[:,'impact_type'][self.event_num_idx] == 1:
                 if evnts.loc[:,'forecast_value'][self.event_num_idx] < evnts.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=10),1000)
+                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=9)),1000)
             if evnts.loc[:,'impact_type'][self.event_num_idx] == 2:
                 if evnts.loc[:,'forecast_value'][self.event_num_idx] > evnts.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=10),1000)
+                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=9)),1000)
             if self.event_num_idx < len(evnts)-1:
                 self.event_num_idx += 1
         else:
@@ -204,8 +159,13 @@ class BuyAndSellSwitch(Strategy):
                 self.event_num_idx += 1
 
 
-# e = Engine()
-# e.add_data(bid1m)
-# e.add_ask_data(ask1m)
-# e.add_strategy(BuyAndSellSwitch())
-# e.run()
+e = Engine()
+e.add_data(bid1m)
+e.add_ask_data(ask1m)
+e.add_strategy(BuyAndSellSwitch())
+e.run()
+
+df = pd.DataFrame(trade_balance, columns=['datetime', 'val'])
+df = df.set_index('datetime')
+df.plot()
+plt.show()
