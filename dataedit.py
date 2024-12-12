@@ -3,13 +3,19 @@ import pandas as pd
 
 #           Gathering Data
 #----------------------------------------------------------------------------------------------------------------------------#
-file_path = 'C:\\Users\\Tadek\\Documents\\TickData\\EURUSD_202401020000_202410232359.csv'
+file_path = 'C:\\Users\\Tadek\\Documents\\TickData\\EURUSD_202301020702_202312292358.csv'
 
 event_file_path = 'C:\\Users\\Tadek\\AppData\\Roaming\\MetaQuotes\\Terminal\\D0E8209F77C8CF37AD8BF550E51FF075\\MQL5\\Files\\test.csv'
+
+event_filter_path = 'C:\\Users\\Tadek\\AppData\\Roaming\\MetaQuotes\\Terminal\\D0E8209F77C8CF37AD8BF550E51FF075\\MQL5\\Files\\test2.csv'
 
 file_reader = pd.read_csv(file_path, header=0, sep='\t')
 
 evpfl = pd.read_csv(event_file_path, sep = ";", header=0)
+
+event_filter = pd.read_csv(event_filter_path, sep = ";", header=0, encoding='cp1252')
+
+print(event_filter.loc[:,"event_id"].to_numpy())
 
 file_reader.loc[:,"<BID>"] = file_reader.loc[:,"<BID>"].replace("",np.NaN).fillna(file_reader.loc[:,"<ASK>"])
 
@@ -40,19 +46,29 @@ for i in range(len(resample_ask)):
 
 evpfl.loc[:,'<DATE_TIME>'] = pd.to_datetime(evpfl.loc[:,'<DATE_TIME>'])
 
-evpfl = evpfl.set_index('<DATE_TIME>')
+for i in range(len(evpfl)):
+    if (evpfl.loc[:,"event_id"][i] in event_filter.loc[:,"event_id"].to_numpy()) == False:
+        evpfl = evpfl.drop([i])
 
+evpfl = evpfl.set_index('<DATE_TIME>')
+evpfl = evpfl.sort_index()
 # print(evpfl.head())
 
 # print(resample_bid.head())
 
+tick = file_reader[['<DATE_TIME>','<BID>','<ASK>']].copy()
+
+tick = tick.set_index('<DATE_TIME>')
+
 # SAVING DATA TO FILE
 
-resample_bid.to_csv('data\\bid1m.csv')
+resample_bid.to_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\bid1m.csv')
 
-resample_ask.to_csv('data\\ask1m.csv')
+resample_ask.to_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\ask1m.csv')
 
-evpfl.to_csv('data\\events.csv')
+evpfl.to_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\events.csv')
+
+tick.to_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\tick.csv')
 
 print("FIXED DATA")
 #-----------------------------------------------------------------------------------------#

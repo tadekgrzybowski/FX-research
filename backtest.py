@@ -147,11 +147,11 @@ class BuyAndSellSwitch(Strategy):
             if evnts.loc[:,'impact_type'][self.event_num_idx] == 1:
                 if evnts.loc[:,'forecast_value'][self.event_num_idx] < evnts.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=9)),1000)
+                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=12)),1000)
             if evnts.loc[:,'impact_type'][self.event_num_idx] == 2:
                 if evnts.loc[:,'forecast_value'][self.event_num_idx] > evnts.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=9)),1000)
+                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=12)),1000)
             if self.event_num_idx < len(evnts)-1:
                 self.event_num_idx += 1
         else:
