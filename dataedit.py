@@ -17,9 +17,9 @@ event_filter = pd.read_csv(event_filter_path, sep = ";", header=0, encoding='cp1
 
 print(event_filter.loc[:,"event_id"].to_numpy())
 
-file_reader.loc[:,"<BID>"] = file_reader.loc[:,"<BID>"].replace("",np.NaN).fillna(file_reader.loc[:,"<ASK>"])
+file_reader.loc[:,"<BID>"] = file_reader.loc[:,"<BID>"].replace("",np.nan).fillna(file_reader.loc[:,"<ASK>"])
 
-file_reader.loc[:,"<ASK>"] = file_reader.loc[:,"<ASK>"].replace("",np.NaN).fillna(file_reader.loc[:,"<BID>"])
+file_reader.loc[:,"<ASK>"] = file_reader.loc[:,"<ASK>"].replace("",np.nan).fillna(file_reader.loc[:,"<BID>"])
 
 file_reader.loc[:,'<DATE_TIME>'] = pd.to_datetime(file_reader.pop('<DATE>')) + pd.to_timedelta(file_reader.pop('<TIME>'))
 

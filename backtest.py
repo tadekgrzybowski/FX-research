@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 
 # IMPORTING DATA
 
-bid1m = pd.read_csv('data\\bid1m.csv', sep = ',', header = 0, index_col=0)
-ask1m = pd.read_csv('data\\ask1m.csv', sep = ',', header = 0, index_col=0)
-evnts = pd.read_csv('data\\events.csv', sep = ',', header = 0, index_col=0)
+bid1m = pd.read_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\bid1m.csv', sep = ',', header = 0, index_col=0)
+ask1m = pd.read_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\ask1m.csv', sep = ',', header = 0, index_col=0)
+evnts = pd.read_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\events.csv', sep = ',', header = 0, index_col=0)
 
 # bid1m.loc[:,'close'].plot()
 
