@@ -2,12 +2,16 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 # IMPORTING DATA
 
-bid1m = pd.read_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\bid1m.csv', sep = ',', header = 0, index_col=0)
-ask1m = pd.read_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\ask1m.csv', sep = ',', header = 0, index_col=0)
-evnts = pd.read_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\events.csv', sep = ',', header = 0, index_col=0)
+
+bid1m = pd.read_csv(os.getenv('bid1m'), sep = ',', header = 0, index_col=0)
+ask1m = pd.read_csv(os.getenv('ask1m'), sep = ',', header = 0, index_col=0)
+evnts = pd.read_csv(os.getenv('evnts'), sep = ',', header = 0, index_col=0)
 
 # bid1m.loc[:,'close'].plot()
 

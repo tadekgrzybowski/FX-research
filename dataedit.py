@@ -1,13 +1,16 @@
 import numpy as np
 import pandas as pd
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 #           Gathering Data
 #----------------------------------------------------------------------------------------------------------------------------#
-file_path = 'C:\\Users\\Tadek\\Documents\\TickData\\EURUSD_202301020702_202312292358.csv'
+file_path = os.getenv('file_path')
+event_file_path = os.getenv('event_file_path')
+event_filter_path = os.getenv('event_filter_path')
 
-event_file_path = 'C:\\Users\\Tadek\\AppData\\Roaming\\MetaQuotes\\Terminal\\D0E8209F77C8CF37AD8BF550E51FF075\\MQL5\\Files\\test.csv'
 
-event_filter_path = 'C:\\Users\\Tadek\\AppData\\Roaming\\MetaQuotes\\Terminal\\D0E8209F77C8CF37AD8BF550E51FF075\\MQL5\\Files\\test2.csv'
 
 file_reader = pd.read_csv(file_path, header=0, sep='\t')
 
@@ -62,13 +65,13 @@ tick = tick.set_index('<DATE_TIME>')
 
 # SAVING DATA TO FILE
 
-resample_bid.to_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\bid1m.csv')
+resample_bid.to_csv('C:\\Users\\karol\\Documents\\python\\programy\\tadkowecos\\bid1m.csv')
 
-resample_ask.to_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\ask1m.csv')
+resample_ask.to_csv('C:\\Users\\karol\\Documents\\python\\programy\\tadkowecos\\ask1m.csv')
 
-evpfl.to_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\events.csv')
+evpfl.to_csv('C:\\Users\\karol\\Documents\\python\\programy\\tadkowecos\\events.csv')
 
-tick.to_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\tick.csv')
+tick.to_csv('C:\\Users\\karol\\Documents\\python\\programy\\tadkowecos\\tick.csv')
 
 print("FIXED DATA")
 #-----------------------------------------------------------------------------------------#
