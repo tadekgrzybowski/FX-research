@@ -13,91 +13,100 @@ tick = pd.read_csv('C:\\Users\\Tadek\\Desktop\\inf\\serious\\data\\tick.csv', se
 
 #-----------------------------------------------------------------------------------------#
 #   DATA ANALYSIS 
-n = 0
-j=0
-data_close = []
-data_open = []
-columns = []
-
-for i in range(20):
-    data_close.append([])
-    data_open.append([])
-    columns.append(f'{i}')
 
 def is_evnt_result_positive(number):
-    if evnts.loc[:,'impact_type'][number] == 1:
-        if evnts.loc[:,'forecast_value'][number] < evnts.loc[:,'actual_value'][number]:
+    if evnts.loc[:,'impact_type'].iloc[number] == 1:
+        if evnts.loc[:,'forecast_value'].iloc[number] < evnts.loc[:,'actual_value'].iloc[number]:
             return True
-    if evnts.loc[:,'impact_type'][number] == 2:
-        if evnts.loc[:,'forecast_value'][number] > evnts.loc[:,'actual_value'][number]:
+    if evnts.loc[:,'impact_type'].iloc[number] == 2:
+        if evnts.loc[:,'forecast_value'].iloc[number] > evnts.loc[:,'actual_value'].iloc[number]:
             return True
     return False
 
 def is_evnt_result_negative(number):
-    if evnts.loc[:,'impact_type'][number] == 1:
-        if evnts.loc[:,'forecast_value'][number] > evnts.loc[:,'actual_value'][number]:
+    if evnts.loc[:,'impact_type'].iloc[number] == 1:
+        if evnts.loc[:,'forecast_value'].iloc[number] > evnts.loc[:,'actual_value'].iloc[number]:
             return True
-    if evnts.loc[:,'impact_type'][number] == 2:
-        if evnts.loc[:,'forecast_value'][number] < evnts.loc[:,'actual_value'][number]:
+    if evnts.loc[:,'impact_type'].iloc[number] == 2:
+        if evnts.loc[:,'forecast_value'].iloc[number] < evnts.loc[:,'actual_value'].iloc[number]:
             return True
     return False
 
+def candle_mean(side):
+    n = 0
+    j=0
+    data_close = []
+    data_open = []
+    columns = []
 
-for idx in bid1m.index:
-    if  evnts.index[n] == idx and (evnts.index[n+1] != evnts.index[n] or evnts.index[n-1] != evnts.index[n]) and is_evnt_result_positive(n) == True:
-    # excluding datetimes with multiple events
-        for i in range(20):
-            prcnt_chng_close = (bid1m.loc[:,'close'][j+i]/bid1m.loc[:,'close'][j] - 1) *100
-            prcnt_chng_open = (bid1m.loc[:,'open'][j+i]/bid1m.loc[:,'open'][j] - 1) *100
-            data_close[i].append(prcnt_chng_close)
-            data_open[i].append(prcnt_chng_open)
-        if n < len(evnts) - 2:
-            n+=1
-    else:
-        while evnts.index[n] < idx and n < len(evnts)-2:
-            n+= 1
-    j+=1
+    for i in range(20):
+        data_close.append([])
+        data_open.append([])
+        columns.append(f'{i}')
 
-df_close = pd.DataFrame(data_close)
-df_close = df_close.transpose()
-avg_close = df_close.mean()
-df_open = pd.DataFrame(data_open)
-df_open = df_open.transpose()
-avg_open = df_open.mean()
+    for idx in bid1m.index:
+        if  evnts.index[n] == idx and (evnts.index[n+1] != evnts.index[n] or evnts.index[n-1] != evnts.index[n]) and is_evnt_result_positive(n) == True:
+        # excluding datetimes with multiple events
+            for i in range(20):
+                prcnt_chng_close = (bid1m.loc[:,'close'].iloc[j+i]/bid1m.loc[:,'close'].iloc[j] - 1) *100
+                prcnt_chng_open = (bid1m.loc[:,'open'].iloc[j+i]/bid1m.loc[:,'open'].iloc[j] - 1) *100
+                data_close[i].append(prcnt_chng_close)
+                data_open[i].append(prcnt_chng_open)
+            if n < len(evnts) - 2:
+                n+=1
+        else:
+            while evnts.index[n] < idx and n < len(evnts)-2:
+                n+= 1
+        j+=1
 
-# data_tick = []
-# for i in range(1200 +30):
-#     data_tick.append([])
+    df_close = pd.DataFrame(data_close)
+    df_close = df_close.transpose()
+    avg_close = df_close.mean()
+    df_open = pd.DataFrame(data_open)
+    df_open = df_open.transpose()
+    avg_open = df_open.mean()
 
-# k=0
-# h=0
-# prev_idx = tick.index[0]
+    if side == "close":
+        avg_close.plot()
+    if side == "open":
+        avg_open.plot()
 
-# def price_in_t(datetime, side, point):
-#     while (tick.index[point] <= datetime and tick.index[point+1] > datetime) == False and point < len(tick)-60:
-#         point += 1
-#     return tick.loc[:,side][point]
+def tick_mean():
+    data_tick = []
+    for i in range(1200 +30):
+        data_tick.append([])
+
+    k=0
+    h=0
+    prev_idx = tick.index[0]
+
+    def price_in_t(datetime, side, point):
+        while (tick.index[point] <= datetime and tick.index[point+1] > datetime) == False and point < len(tick)-60:
+            point += 1
+        return tick.loc[:,side][point]
 
 
-# for k in range(len(evnts.index)-1):
-# #for k in range(1):
-#     if (evnts.index[k+1] != evnts.index[k] or evnts.index[k-1] != evnts.index[k]) and is_evnt_result_positive(k) == True:
-#     #if  is_evnt_result_positive(k) == True:
-#         while (tick.index[h] <= evnts.index[k] and tick.index[h+1] > evnts.index[k]) == False and h < len(tick)-60:
-#             h+=1
-#         point0 = tick.loc[:,'<BID>'][h]
-#         print(evnts.index[k], point0, k)
-#         for i in range(1200 +30):
-#             time_date = str(pd.Timestamp(evnts.index[k]) + pd.Timedelta(seconds=i) - pd.Timedelta(seconds=30))
-#             change = (price_in_t(time_date, '<BID>', h-1000)/point0 - 1)*100
-#             data_tick[i].append(change)
-#     else:
-#         while evnts.index[k] < prev_idx and k < len(evnts)-2:
-#             k+= 1
+    for k in range(len(evnts.index)-1):
+    #for k in range(1):
+        if (evnts.index[k+1] != evnts.index[k] or evnts.index[k-1] != evnts.index[k]) and is_evnt_result_positive(k) == True:
+        #if  is_evnt_result_positive(k) == True:
+            while (tick.index[h] <= evnts.index[k] and tick.index[h+1] > evnts.index[k]) == False and h < len(tick)-60:
+                h+=1
+            point0 = tick.loc[:,'<BID>'][h]
+            print(evnts.index[k], point0, k)
+            for i in range(1200 +30):
+                time_date = str(pd.Timestamp(evnts.index[k]) + pd.Timedelta(seconds=i) - pd.Timedelta(seconds=30))
+                change = (price_in_t(time_date, '<BID>', h-1000)/point0 - 1)*100
+                data_tick[i].append(change)
+        else:
+            while evnts.index[k] < prev_idx and k < len(evnts)-2:
+                k+= 1
 
-# df_tick = pd.DataFrame(data_tick)
-# df_tick = df_tick.transpose()
-# avg_tick = df_tick.mean()
+    df_tick = pd.DataFrame(data_tick)
+    df_tick = df_tick.transpose()
+    avg_tick = df_tick.mean()
+
+    avg_tick.plot()
 
 
 # prcnt_larger_val_than_max_avg = 0
@@ -126,8 +135,7 @@ avg_open = df_open.mean()
 
 #df_close.std().plot()
 
-avg_close.plot()
-#avg_tick.plot()
+candle_mean()
 #avg_open.plot()
 
 plt.show()
