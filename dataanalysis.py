@@ -138,6 +138,8 @@ def tick_mean():
 
 #df_close.std().plot()
 
+print("Hello World")
+
 candle_mean("open")
 #avg_open.plot()
 
