@@ -1,0 +1,20 @@
+# Ignorowanie plików z konfiguracjami środowiska
+.env
+
+# Ignorowanie plików z zależnościami
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorowanie logów
+*.log
+
+# Ignorowanie wirtualnego środowiska
+venv/
+.env/
+env/
+
+# Ignorowanie plików specyficznych dla systemu operacyjnego
+.DS_Store
+Thumbs.db
