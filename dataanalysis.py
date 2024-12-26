@@ -50,6 +50,7 @@ def candle_mean(side):
     for idx in bid1m.index:
         if  evnts.index[n] == idx and (evnts.index[n+1] != evnts.index[n] or evnts.index[n-1] != evnts.index[n]) and is_evnt_result_positive(n) == True:
         # excluding datetimes with multiple events
+            print(evnts.loc[:,'event_id'].iloc[n],evnts.index[n], bid1m.index[j], bid1m.loc[:,'open'].iloc[j])
             for i in range(20):
                 prcnt_chng_close = (bid1m.loc[:,'close'].iloc[j+i]/bid1m.loc[:,'close'].iloc[j] - 1) *100
                 prcnt_chng_open = (bid1m.loc[:,'open'].iloc[j+i]/bid1m.loc[:,'open'].iloc[j] - 1) *100
@@ -62,21 +63,20 @@ def candle_mean(side):
                 n+= 1
         j+=1
 
-    df_close = pd.DataFrame(data_close)
-    df_close = df_close.transpose()
-    avg_close = df_close.mean()
-    df_open = pd.DataFrame(data_open)
-    df_open = df_open.transpose()
-    avg_open = df_open.mean()
-
     if side == "close":
+        df_close = pd.DataFrame(data_close)
+        df_close = df_close.transpose()
+        avg_close = df_close.mean()
         avg_close.plot()
     if side == "open":
+        df_open = pd.DataFrame(data_open)
+        df_open = df_open.transpose()
+        avg_open = df_open.mean()
         avg_open.plot()
 
-def tick_mean():
+def tick_mean(minutes):
     data_tick = []
-    for i in range(1200 +30):
+    for i in range(minutes*60 +30):
         data_tick.append([])
 
     k=0
@@ -97,7 +97,7 @@ def tick_mean():
                 h+=1
             point0 = tick.loc[:,'<BID>'][h]
             print(evnts.index[k], point0, k)
-            for i in range(1200 +30):
+            for i in range(minutes*60 +30):
                 time_date = str(pd.Timestamp(evnts.index[k]) + pd.Timedelta(seconds=i) - pd.Timedelta(seconds=30))
                 change = (price_in_t(time_date, '<BID>', h-1000)/point0 - 1)*100
                 data_tick[i].append(change)
@@ -138,9 +138,8 @@ def tick_mean():
 
 #df_close.std().plot()
 
-print("Hello World")
-
 candle_mean("open")
+#tick_mean(15)
 #avg_open.plot()
 
 plt.show()

@@ -49,9 +49,11 @@ for i in range(len(resample_ask)):
 
 evpfl.loc[:,'<DATE_TIME>'] = pd.to_datetime(evpfl.loc[:,'<DATE_TIME>'])
 
-for i in range(len(evpfl)):
-    if (evpfl.loc[:,"event_id"][i] in event_filter.loc[:,"event_id"].to_numpy()) == False:
-        evpfl = evpfl.drop([i])
+# for i in range(len(evpfl)):
+#     if (evpfl.loc[:,"event_id"][i] in event_filter.loc[:,"event_id"].to_numpy()) == False:
+#         evpfl = evpfl.drop([i])
+
+evpfl = evpfl[evpfl.loc[:,"event_id"].isin(event_filter.loc[:,"event_id"].to_numpy())]
 
 evpfl = evpfl.set_index('<DATE_TIME>')
 evpfl = evpfl.sort_index()
@@ -65,13 +67,13 @@ tick = tick.set_index('<DATE_TIME>')
 
 # SAVING DATA TO FILE
 
-resample_bid.to_csv('C:\\Users\\karol\\Documents\\python\\programy\\tadkowecos\\bid1m.csv')
+resample_bid.to_csv(os.getenv('bid1m'))
 
-resample_ask.to_csv('C:\\Users\\karol\\Documents\\python\\programy\\tadkowecos\\ask1m.csv')
+resample_ask.to_csv(os.getenv('ask1m'))
 
-evpfl.to_csv('C:\\Users\\karol\\Documents\\python\\programy\\tadkowecos\\events.csv')
+evpfl.to_csv(os.getenv('evnts'))
 
-tick.to_csv('C:\\Users\\karol\\Documents\\python\\programy\\tadkowecos\\tick.csv')
+tick.to_csv(os.getenv('tick'))
 
 print("FIXED DATA")
 #-----------------------------------------------------------------------------------------#
