@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
+import statistics as st
 
 load_dotenv()
 # IMPORTING DATA
@@ -35,23 +36,23 @@ def is_evnt_result_negative(number):
             return True
     return False
 
-def candle_mean(side):
+def candle_mean(side, minutes):
     n = 0
     j=0
     data_close = []
     data_open = []
     columns = []
 
-    for i in range(20):
+    for i in range(minutes):
         data_close.append([])
         data_open.append([])
         columns.append(f'{i}')
 
     for idx in bid1m.index:
-        if  evnts.index[n] == idx and (evnts.index[n+1] != evnts.index[n] or evnts.index[n-1] != evnts.index[n]) and is_evnt_result_positive(n) == True:
+        if  evnts.index[n] == idx and (evnts.index[n+1] != idx or evnts.index[n-1] != idx) and is_evnt_result_positive(n) == True:
         # excluding datetimes with multiple events
             print(evnts.loc[:,'event_id'].iloc[n],evnts.index[n], bid1m.index[j], bid1m.loc[:,'open'].iloc[j])
-            for i in range(20):
+            for i in range(minutes):
                 prcnt_chng_close = (bid1m.loc[:,'close'].iloc[j+i]/bid1m.loc[:,'close'].iloc[j] - 1) *100
                 prcnt_chng_open = (bid1m.loc[:,'open'].iloc[j+i]/bid1m.loc[:,'open'].iloc[j] - 1) *100
                 data_close[i].append(prcnt_chng_close)
@@ -84,9 +85,12 @@ def tick_mean(minutes):
     prev_idx = tick.index[0]
 
     def price_in_t(datetime, side, point):
-        while (tick.index[point] <= datetime and tick.index[point+1] > datetime) == False and point < len(tick)-60:
+        if tick.index[point] > datetime:
+            point = 0
+        while (tick.index[point] < datetime) and point < len(tick)-60:
             point += 1
-        return tick.loc[:,side][point]
+        point -= 1
+        return (tick.loc[:,side][point],point)
 
 
     for k in range(len(evnts.index)-1):
@@ -96,10 +100,13 @@ def tick_mean(minutes):
             while (tick.index[h] <= evnts.index[k] and tick.index[h+1] > evnts.index[k]) == False and h < len(tick)-60:
                 h+=1
             point0 = tick.loc[:,'<BID>'][h]
-            print(evnts.index[k], point0, k)
+            print(evnts.index[k],tick.index[h], point0, k)
+            j=h-300
             for i in range(minutes*60 +30):
                 time_date = str(pd.Timestamp(evnts.index[k]) + pd.Timedelta(seconds=i) - pd.Timedelta(seconds=30))
-                change = (price_in_t(time_date, '<BID>', h-1000)/point0 - 1)*100
+                price_vector = price_in_t(time_date, '<BID>', j-1)
+                j = price_vector[1]
+                change = (price_vector[0]/point0 - 1)*100
                 data_tick[i].append(change)
         else:
             while evnts.index[k] < prev_idx and k < len(evnts)-2:
@@ -110,6 +117,159 @@ def tick_mean(minutes):
     avg_tick = df_tick.mean()
 
     avg_tick.plot()
+
+def tick_volatility(minutes, length):
+    data_vol = []
+    for i in range(minutes*60 +30):
+        data_vol.append([])
+
+    k=0
+    h=0
+    prev_idx = tick.index[0]
+
+    mem = []
+    for i in range(length):
+        mem.append(0)
+
+    def price_in_t(datetime, side, point):
+        if tick.index[point] > datetime:
+            point = 0
+        while (tick.index[point] < datetime) and point < len(tick)-60:
+            point += 1
+        point -= 1
+        return (tick.loc[:,side][point],point)
+
+
+    for k in range(len(evnts.index)-1):
+    #for k in range(1):
+        if (evnts.index[k+1] != evnts.index[k] or evnts.index[k-1] != evnts.index[k]) and is_evnt_result_positive(k) == True:
+        #if  is_evnt_result_positive(k) == True:
+            event_idx_min_30sek = str(pd.Timestamp(evnts.index[k]) - pd.Timedelta(seconds=30))
+            while (tick.index[h] <= event_idx_min_30sek and tick.index[h+1] > event_idx_min_30sek) == False and h < len(tick)-60:
+                h+=1
+            point0 = tick.loc[:,'<BID>'][h]
+            j=h
+            for i in range(minutes*60 +30):
+                time_date = str(pd.Timestamp(evnts.index[k]) + pd.Timedelta(seconds=i) - pd.Timedelta(seconds=30))
+                price_vector = price_in_t(time_date, '<BID>', j-1)
+                j = price_vector[1]
+                price = price_vector[0]
+                for p in range(length):
+                    if p < length-1:
+                        mem[length-p-1]=mem[length-p-2]
+                    else:
+                        mem[0]=np.log(price/point0)
+                if i < length:
+                    data_vol[i].append(0)
+                else:
+                    data_vol[i].append(st.stdev(mem)*100000)
+                point0 = price
+        else:
+            while evnts.index[k] < prev_idx and k < len(evnts)-2:
+                k+= 1
+
+    df_tick = pd.DataFrame(data_vol)
+    df_tick = df_tick.transpose()
+    avg_tick = df_tick.mean()
+
+    plt.axvline(x=30)
+    avg_tick.plot()
+
+def min_max_dots_tick(minutes):
+    k=0
+    h=0
+    prev_idx = tick.index[0]
+
+    max_val = 0
+    max_val_idx = 0
+
+    min_val = 0
+    min_val_idx = 0
+
+
+    def price_in_t(datetime, side, point):
+        if tick.index[point] > datetime:
+            point = 0
+        while (tick.index[point] < datetime) and point < len(tick)-60:
+            point += 1
+        point -= 1
+        return (tick.loc[:,side][point],point)
+
+
+    for k in range(len(evnts.index)-1):
+    #for k in range(1):
+        if (evnts.index[k+1] != evnts.index[k] or evnts.index[k-1] != evnts.index[k]) and is_evnt_result_positive(k) == True:
+        #if  is_evnt_result_positive(k) == True:
+            while (tick.index[h] <= evnts.index[k] and tick.index[h+1] > evnts.index[k]) == False and h < len(tick)-60:
+                h+=1
+            point0 = tick.loc[:,'<BID>'][h]
+            max_val = point0
+            min_val = point0
+            j=h-300
+            for i in range(minutes*60 +30):
+                time_date = str(pd.Timestamp(evnts.index[k]) + pd.Timedelta(seconds=i) - pd.Timedelta(seconds=30))
+                price_vector = price_in_t(time_date, '<BID>', j-1)
+                j = price_vector[1]
+                price = price_vector[0]
+                if price > max_val:
+                    max_val = price
+                    max_val_idx = i
+                if price < min_val:
+                    min_val = price
+                    min_val_idx = i
+            plt.plot([max_val_idx, min_val_idx],[(max_val/point0 - 1)*100,(min_val/point0 - 1)*100],'-ko', label='line & marker', linewidth = 0.5)
+            plt.plot(max_val_idx, (max_val/point0 - 1)*100, 'ro')
+            plt.plot(min_val_idx, (min_val/point0 - 1)*100, 'bo')
+            plt.axvline(x=30)
+                
+        else:
+            while evnts.index[k] < prev_idx and k < len(evnts)-2:
+                k+= 1
+
+
+def min_max_dots(minutes):
+    n = 0
+    j=0
+
+    max_val = 0
+    max_val_idx = 0
+
+    min_val = 0
+    min_val_idx = 0
+
+    counter = 0
+    evnt_counter = 0
+    mon_interval = 0
+
+    for idx in bid1m.index:
+        if  evnts.index[n] == idx and (evnts.index[n+1] != idx or evnts.index[n-1] != idx) and is_evnt_result_positive(n) == True:
+        # excluding datetimes with multiple events
+            evnt_counter += 1
+            max_val = bid1m.loc[:,'high'].iloc[j]
+            max_val_idx = 0
+            min_val = bid1m.loc[:,'low'].iloc[j]
+            min_val_idx = 0
+            for i in range(minutes):
+                if bid1m.loc[:,'high'].iloc[j+i] > max_val:
+                    max_val = bid1m.loc[:,'high'].iloc[j+i]
+                    max_val_idx = i
+                if bid1m.loc[:,'low'].iloc[j+i] < min_val:
+                    min_val = bid1m.loc[:,'low'].iloc[j+i]
+                    min_val_idx = i
+            if max_val_idx == 0 or min_val_idx == 0:
+                counter += 1
+                mon_interval += (np.abs(max_val_idx-min_val_idx))
+            plt.plot([max_val_idx, min_val_idx], [(max_val/bid1m.loc[:,'open'].iloc[j] - 1) *100, (min_val/bid1m.loc[:,'open'].iloc[j] - 1) *100], '-ko', label='line & marker', linewidth = 0.5)
+            plt.plot(max_val_idx, (max_val/bid1m.loc[:,'open'].iloc[j] - 1) *100, 'ro')
+            plt.plot(min_val_idx, (min_val/bid1m.loc[:,'open'].iloc[j] - 1) *100, 'bo')
+            if n < len(evnts) - 2:
+                n+=1
+        else:
+            while evnts.index[n] < idx and n < len(evnts)-2:
+                n+= 1
+        j+=1
+    print(evnt_counter)
+    print((counter/evnt_counter)*100, mon_interval/counter)
 
 
 # prcnt_larger_val_than_max_avg = 0
@@ -138,8 +298,14 @@ def tick_mean(minutes):
 
 #df_close.std().plot()
 
-candle_mean("open")
-#tick_mean(15)
+#candle_mean("open",10)
+#min_max_dots(10)
+
+#tick_mean(7)
+#min_max_dots_tick(7)
+
+tick_volatility(4,10)
+
 #avg_open.plot()
 
 plt.show()
