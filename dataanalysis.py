@@ -303,14 +303,9 @@ def min_max_dots(minutes):
 
 #df_close.std().plot()
 
-#candle_mean("open",10)
-#min_max_dots(10)
 
-tick_mean(10)
-#min_max_dots_tick(7)
 
-#tick_volatility(4,5)
-
+candle_mean("open")
 #avg_open.plot()
 
 plt.show()
