@@ -1,5 +1,5 @@
-# FX-bullshit
-FX bullshit
+# FX-research
+FX research
 
 This is the repository for data analysis.
 
