@@ -80,6 +80,8 @@ def tick_mean(minutes):
     for i in range(minutes*60 +30):
         data_tick.append([])
 
+    counter = 0
+
     k=0
     h=0
     prev_idx = tick.index[0]
@@ -102,11 +104,14 @@ def tick_mean(minutes):
             point0 = tick.loc[:,'<BID>'][h]
             print(evnts.index[k],tick.index[h], point0, k)
             j=h-300
+            counter+=1
             for i in range(minutes*60 +30):
                 time_date = str(pd.Timestamp(evnts.index[k]) + pd.Timedelta(seconds=i) - pd.Timedelta(seconds=30))
                 price_vector = price_in_t(time_date, '<BID>', j-1)
                 j = price_vector[1]
                 change = (price_vector[0]/point0 - 1)*100
+
+                #change_log = np.log(change+1)
                 data_tick[i].append(change)
         else:
             while evnts.index[k] < prev_idx and k < len(evnts)-2:
@@ -115,7 +120,7 @@ def tick_mean(minutes):
     df_tick = pd.DataFrame(data_tick)
     df_tick = df_tick.transpose()
     avg_tick = df_tick.mean()
-
+    print(counter)
     avg_tick.plot()
 
 def tick_volatility(minutes, length):
@@ -301,10 +306,10 @@ def min_max_dots(minutes):
 #candle_mean("open",10)
 #min_max_dots(10)
 
-#tick_mean(7)
+tick_mean(10)
 #min_max_dots_tick(7)
 
-tick_volatility(4,10)
+#tick_volatility(4,5)
 
 #avg_open.plot()
 

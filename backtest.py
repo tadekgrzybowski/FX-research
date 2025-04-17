@@ -76,7 +76,7 @@ class Engine():
                         type = order.type,
                         idx = order.idx)
                     
-#                print("ORDER FILLED", self.current_idx, order.side, self.data.loc[self.current_idx]['open'] ,self.ask_data.loc[self.current_idx]['open'])
+                print("ORDER FILLED", self.current_idx, order.side, self.data.loc[self.current_idx]['open'] ,self.ask_data.loc[self.current_idx]['open'])
                 self.strategy.trades.append(t)
                 self.cash -= t.price * t.size
                 trade_balance.append([order.idx, self._get_stats()['total_return']])
@@ -90,7 +90,9 @@ class Engine():
     def _get_stats(self):
         metrics = {}
         total_return =100 * ((self.data.loc[self.current_idx]['close'] * self.strategy.position_size + self.cash) / self.initial_cash -1)
+        total_cash =(self.data.loc[self.current_idx]['close'] * self.strategy.position_size + self.cash)
         metrics['total_return'] = total_return
+        metrics['total_cash'] = total_cash
 #        print(metrics['total_return'], self.cash, self.strategy.position_size)
         return metrics
 
@@ -151,11 +153,11 @@ class BuyAndSellSwitch(Strategy):
             if evnts.loc[:,'impact_type'][self.event_num_idx] == 1:
                 if evnts.loc[:,'forecast_value'][self.event_num_idx] < evnts.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=12)),1000)
+                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=9)),self._get_stats()['total_return']*0.01)
             if evnts.loc[:,'impact_type'][self.event_num_idx] == 2:
                 if evnts.loc[:,'forecast_value'][self.event_num_idx] > evnts.loc[:,'actual_value'][self.event_num_idx]:
                     self.buy(self.current_idx,1000)
-                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=12)),1000)
+                    self.sell(str(pd.Timestamp(self.current_idx) + pd.Timedelta(minutes=9)),self._get_stats()['total_return']*0.01)
             if self.event_num_idx < len(evnts)-1:
                 self.event_num_idx += 1
         else:
